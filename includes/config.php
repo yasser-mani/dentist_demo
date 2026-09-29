@@ -5,18 +5,19 @@
  */
 
 // Database
+// Defaults match a stock XAMPP / WAMP / MAMP install (root, no password).
+// Change these to match your own MySQL setup.
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'dentaflow');
-define('DB_USER', 'dentaflow');
-define('DB_PASS', 'DentaFlow@2024!');
+define('DB_USER', 'root');
+define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
 
 // Application
 define('APP_NAME', 'DentaFlow');
 define('APP_URL', 'http://localhost/dentaflow');
 
-// File uploads
-define('UPLOAD_DIR', '/var/www/dentaflow-uploads/patients/');
+// File uploads (stored inside the project, under uploads/patients/)
 define('UPLOAD_MAX_SIZE', 5 * 1024 * 1024); // 5 MB
 define('ALLOWED_EXTENSIONS', ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx']);
 define('ALLOWED_MIMES', [

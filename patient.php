@@ -130,9 +130,12 @@ if (!$patientId) {
 window.PATIENT_ID = <?= $patientId ?>;
 </script>
 
-<?php require_once 'includes/footer.php'; ?>
-
-<script src="assets/js/profile.js"></script>
-<script src="assets/js/dental-chart.js"></script>
-<script src="assets/js/notes.js"></script>
-<script src="assets/js/attachments.js"></script>
+<?php
+$pageScripts = [
+    'assets/js/profile.js',
+    'assets/js/dental-chart.js',
+    'assets/js/notes.js',
+    'assets/js/attachments.js',
+];
+require_once 'includes/footer.php';
+?>

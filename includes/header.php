@@ -1,18 +1,21 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/helpers.php';
 $currentPage = basename($_SERVER['PHP_SELF'], '.php');
+$pageTitle = $pageTitle ?? APP_NAME;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= e(APP_NAME) ?> – Gestion de cabinet dentaire</title>
+    <title><?= e($pageTitle) ?> – <?= e(APP_NAME) ?></title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
     <div class="app-container">
-        <aside class="sidebar">
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <img src="assets/img/logo.svg" alt="Logo" class="sidebar-logo">
                 <h1 class="sidebar-title"><?= e(APP_NAME) ?></h1>
@@ -35,10 +38,15 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
 
         <main class="main-content">
             <header class="top-bar">
-                <h2 class="page-title" id="pageTitle">Tableau de bord</h2>
+                <div class="top-bar-left">
+                    <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Ouvrir le menu">
+                        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
+                    <h2 class="page-title" id="pageTitle"><?= e($pageTitle) ?></h2>
+                </div>
                 <div class="top-bar-actions">
                     <span class="user-greeting">Bienvenue, Dr. Dupont</span>
                 </div>
             </header>
 
-            <div class="content-wrapper"></div>
+            <div class="content-wrapper">

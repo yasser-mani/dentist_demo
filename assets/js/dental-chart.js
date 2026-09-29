@@ -40,6 +40,7 @@
   const upperTeeth = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
   const lowerTeeth = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
 
+  // Keyed by tooth number, matches what api/teeth.php returns
   let chartData = {};
 
   async function initChart() {
@@ -47,16 +48,9 @@
     if (!container) return;
 
     try {
-      const res = await App.fetch(`api/dental_chart.php?patient_id=${window.PATIENT_ID}`);
-      const list = res?.data || res || [];
-      
-      chartData = {};
-      if (Array.isArray(list)) {
-        list.forEach(item => {
-          chartData[item.tooth_number] = item;
-        });
-      }
-
+      const res = await App.fetch(`api/teeth.php?patient_id=${window.PATIENT_ID}`);
+      // api/teeth.php returns an object keyed by tooth_number, not an array.
+      chartData = (res && res.data && typeof res.data === 'object') ? res.data : {};
       renderChart(container);
     } catch (err) {
       console.error('Failed to load dental chart data:', err);
@@ -66,7 +60,7 @@
 
   function renderChart(container) {
     let html = '<div class="dental-arch-container">';
-    
+
     // Upper Arch
     html += '<div class="dental-arch upper-arch">';
     upperTeeth.forEach(num => { html += renderToothSVG(num, false); });
@@ -117,11 +111,11 @@
 
     const data = chartData[num] || {};
     title.textContent = `Dent ${num}`;
-    
+
     document.getElementById('toothState').value = data.state || 'healthy';
     document.getElementById('toothTreatment').value = data.treatment || '';
     document.getElementById('toothNotes').value = data.notes || '';
-    document.getElementById('toothDate').value = data.date || new Date().toISOString().split('T')[0];
+    document.getElementById('toothDate').value = data.record_date || new Date().toISOString().split('T')[0];
 
     panel.style.display = 'block';
     panel.setAttribute('data-active-tooth', num);
@@ -139,19 +133,19 @@
       state: document.getElementById('toothState').value,
       treatment: document.getElementById('toothTreatment').value,
       notes: document.getElementById('toothNotes').value,
-      date: document.getElementById('toothDate').value
+      record_date: document.getElementById('toothDate').value
     };
 
     try {
-      await App.fetch('api/dental_chart.php', {
+      await App.fetch('api/teeth.php', {
         method: 'POST',
         body: JSON.stringify(payload)
       });
-      
+
       chartData[num] = payload;
-      initChart();
+      renderChart(document.getElementById('dentalChart'));
       panel.style.display = 'none';
-      if (App.toast) App.toast('Carte dentaire mise à jour');
+      if (App.toast) App.toast('Carte dentaire mise à jour', 'success');
     } catch (err) {
       if (App.toast) App.toast(err.message, 'error');
     }

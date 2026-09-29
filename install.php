@@ -1,93 +1,114 @@
 <?php
-$pageTitle = 'Tableau de bord';
+/**
+ * One-time setup script.
+ * Creates the database and tables, loads demo data, and creates the
+ * uploads folder. Delete this file once your demo is up and running.
+ */
 require_once 'includes/config.php';
-require_once 'includes/helpers.php';
-require_once 'includes/header.php';
+
+$done = false;
+$error = null;
+$log = [];
+
+function runSqlFile(PDO $pdo, string $path, array &$log): void {
+    $sql = file_get_contents($path);
+    if ($sql === false) {
+        throw new RuntimeException("Impossible de lire $path");
+    }
+    // Strip full-line comments, then split into individual statements.
+    $lines = preg_split('/\r\n|\r|\n/', $sql);
+    $lines = array_filter($lines, fn($l) => !preg_match('/^\s*--/', $l));
+    $clean = implode("\n", $lines);
+
+    $statements = array_filter(array_map('trim', explode(';', $clean)));
+    foreach ($statements as $statement) {
+        $pdo->exec($statement);
+    }
+    $log[] = basename($path) . ' : ' . count($statements) . ' instruction(s) exécutée(s).';
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        // Connect without selecting a database yet, so schema.sql can create it.
+        $dsn = 'mysql:host=' . DB_HOST . ';charset=' . DB_CHARSET;
+        $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        ]);
+
+        runSqlFile($pdo, __DIR__ . '/database/schema.sql', $log);
+        runSqlFile($pdo, __DIR__ . '/database/seed.sql', $log);
+
+        // Create the uploads folder structure.
+        $uploadsDir = __DIR__ . '/uploads/patients';
+        if (!is_dir($uploadsDir)) {
+            mkdir($uploadsDir, 0755, true);
+            $log[] = 'Dossier uploads/patients/ créé.';
+        } else {
+            $log[] = 'Dossier uploads/patients/ déjà présent.';
+        }
+
+        $htaccess = __DIR__ . '/uploads/.htaccess';
+        if (!file_exists($htaccess)) {
+            file_put_contents($htaccess, "php_flag engine off\nOptions -Indexes\n<IfModule mod_authz_core.c>\n  Require all denied\n  <FilesMatch \"\\.(jpg|jpeg|png|pdf|doc|docx)$\">\n    Require all granted\n  </FilesMatch>\n</IfModule>\n<IfModule !mod_authz_core.c>\n  Order deny,allow\n  Deny from all\n  <FilesMatch \"\\.(jpg|jpeg|png|pdf|doc|docx)$\">\n    Allow from all\n  </FilesMatch>\n</IfModule>\n");
+            $log[] = 'uploads/.htaccess créé.';
+        }
+
+        $done = true;
+    } catch (Throwable $e) {
+        $error = $e->getMessage();
+    }
+}
 ?>
-
-<div class="dashboard-grid">
-    <!-- Stats cards -->
-    <div class="stats-row" id="statsRow">
-        <div class="stat-card skeleton">
-            <div class="stat-icon" style="background: #dbeafe;">
-                <svg width="24" height="24" fill="#2563eb" viewBox="0 0 20 20"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installation – DentaFlow</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body style="background:var(--gray-50);">
+    <div style="max-width:560px;margin:60px auto;padding:0 var(--space-4);">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Installation de DentaFlow</h3>
             </div>
-            <div class="stat-content">
-                <div class="stat-label">Total patients</div>
-                <div class="stat-value">—</div>
-            </div>
-        </div>
-        
-        <div class="stat-card skeleton">
-            <div class="stat-icon" style="background: #dcfce7;">
-                <svg width="24" height="24" fill="#16a34a" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"/></svg>
-            </div>
-            <div class="stat-content">
-                <div class="stat-label">Rendez-vous aujourd'hui</div>
-                <div class="stat-value">—</div>
-            </div>
-        </div>
-        
-        <div class="stat-card skeleton">
-            <div class="stat-icon" style="background: #fef3c7;">
-                <svg width="24" height="24" fill="#f59e0b" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/></svg>
-            </div>
-            <div class="stat-content">
-                <div class="stat-label">En traitement</div>
-                <div class="stat-value">—</div>
-            </div>
-        </div>
-        
-        <div class="stat-card skeleton">
-            <div class="stat-icon" style="background: #e0e7ff;">
-                <svg width="24" height="24" fill="#4f46e5" viewBox="0 0 20 20"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/></svg>
-            </div>
-            <div class="stat-content">
-                <div class="stat-label">Nouveaux patients (30j)</div>
-                <div class="stat-value">—</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Today's appointments -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Rendez-vous d'aujourd'hui</h3>
-        </div>
-        <div class="card-body">
-            <div id="todayAppointments" class="appointments-list skeleton-text">
-                Chargement...
+            <div class="card-body">
+                <?php if ($done): ?>
+                    <p style="color:var(--success);font-weight:600;margin-bottom:var(--space-4);">
+                        Installation terminée avec succès.
+                    </p>
+                    <ul style="margin-bottom:var(--space-5); padding-left: var(--space-5); color: var(--gray-700);">
+                        <?php foreach ($log as $line): ?>
+                            <li><?= e($line) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <p class="text-muted" style="margin-bottom:var(--space-5);">
+                        Pensez à supprimer <code>install.php</code> maintenant que la base est prête.
+                    </p>
+                    <a href="index.php" class="btn btn-primary btn-block">Ouvrir le tableau de bord</a>
+                <?php else: ?>
+                    <?php if ($error): ?>
+                        <p style="color:var(--danger);font-weight:600;margin-bottom:var(--space-4);">
+                            Erreur : <?= e($error) ?>
+                        </p>
+                        <p class="text-muted" style="margin-bottom:var(--space-4);">
+                            Vérifiez les identifiants MySQL dans <code>includes/config.php</code>
+                            (hôte, utilisateur, mot de passe) puis réessayez.
+                        </p>
+                    <?php endif; ?>
+                    <p class="text-muted" style="margin-bottom:var(--space-5);">
+                        Ceci va créer la base <code><?= e(DB_NAME) ?></code>, ses tables, y charger des
+                        données de démonstration, et créer le dossier des pièces jointes.
+                        Si la base existe déjà, ses tables seront <strong>recréées</strong>
+                        (les données existantes seront perdues).
+                    </p>
+                    <form method="POST">
+                        <button type="submit" class="btn btn-primary btn-block">Lancer l'installation</button>
+                    </form>
+                <?php endif; ?>
             </div>
         </div>
     </div>
-
-    <!-- Recent patients -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Patients récents</h3>
-            <a href="patients.php" class="btn btn-sm btn-secondary">Voir tous</a>
-        </div>
-        <div class="card-body">
-            <div class="table-container">
-                <table class="data-table" id="recentPatientsTable">
-                    <thead>
-                        <tr>
-                            <th>Nom complet</th>
-                            <th>Téléphone</th>
-                            <th>Statut</th>
-                            <th>Ajouté le</th>
-                            <th class="text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td colspan="5" class="skeleton-text">Chargement...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script src="assets/js/dashboard.js"></script>
-
-<?php require_once 'includes/footer.php'; ?>
+</body>
+</html>

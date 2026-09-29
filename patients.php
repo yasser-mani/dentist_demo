@@ -50,6 +50,7 @@ require_once 'includes/header.php';
     </div>
 </div>
 
-<?php require_once 'includes/footer.php'; ?>
-
-<script src="assets/js/patients.js"></script>
+<?php
+$pageScripts = ['assets/js/patients.js'];
+require_once 'includes/footer.php';
+?>

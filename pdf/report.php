@@ -48,38 +48,53 @@ $stmt = $db->prepare("
 $stmt->execute([$patientId]);
 $images = $stmt->fetchAll();
 
+/**
+ * FPDF's core fonts use Latin-1 (cp1252), not UTF-8. MySQL/PHP strings here
+ * are UTF-8, so every piece of text must be converted before it reaches FPDF
+ * or accented French characters (é, à, ç...) render as garbage.
+ */
+function pdfText(?string $text): string {
+    if ($text === null || $text === '') return '';
+    $converted = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT//IGNORE', $text);
+    return $converted !== false ? $converted : $text;
+}
+
 // Build PDF
 class PDF extends FPDF {
     function Header() {
         $this->SetFont('Arial','B',16);
         $this->SetTextColor(37,99,235);
-        $this->Cell(0,10,'DentaFlow - Rapport Patient',0,1,'C');
+        $this->Cell(0,10,pdfText('DentaFlow - Rapport Patient'),0,1,'C');
         $this->Ln(5);
     }
-    
+
     function Footer() {
         $this->SetY(-15);
         $this->SetFont('Arial','I',8);
         $this->SetTextColor(128);
-        $this->Cell(0,10,'Page '.$this->PageNo(),0,0,'C');
+        $this->Cell(0,10,pdfText('Page '.$this->PageNo()),0,0,'C');
     }
-    
+
     function SectionTitle($title) {
         $this->SetFont('Arial','B',12);
         $this->SetTextColor(0);
-        $this->Cell(0,8,$title,0,1);
+        $this->Cell(0,8,pdfText($title),0,1);
         $this->SetDrawColor(200);
         $this->Line($this->GetX(), $this->GetY(), $this->GetX()+190, $this->GetY());
         $this->Ln(4);
     }
-    
+
     function InfoRow($label, $value) {
         $this->SetFont('Arial','B',10);
         $this->SetTextColor(60);
-        $this->Cell(50,6,$label.':',0,0);
+        $this->Cell(50,6,pdfText($label.':'),0,0);
         $this->SetFont('Arial','',10);
         $this->SetTextColor(0);
-        $this->Cell(0,6,$value,0,1);
+        $this->Cell(0,6,pdfText($value),0,1);
+    }
+
+    function Body($text) {
+        $this->MultiCell(0,5,pdfText($text));
     }
 }
 
@@ -111,13 +126,13 @@ $stateLabels = [
 if (empty($teeth)) {
     $pdf->SetFont('Arial','I',10);
     $pdf->SetTextColor(128);
-    $pdf->Cell(0,6,'Aucune donnee dentaire enregistree.',0,1);
+    $pdf->Cell(0,6,pdfText('Aucune donnee dentaire enregistree.'),0,1);
 } else {
     $pdf->SetFont('Arial','',9);
     foreach ($teeth as $t) {
         $line = 'Dent ' . $t['tooth_number'] . ' : ' . $stateLabels[$t['state']];
         if ($t['treatment']) $line .= ' | ' . $t['treatment'];
-        $pdf->MultiCell(0,5,$line);
+        $pdf->Body($line);
     }
 }
 
@@ -128,15 +143,15 @@ $pdf->SectionTitle('Notes cliniques');
 if (empty($notes)) {
     $pdf->SetFont('Arial','I',10);
     $pdf->SetTextColor(128);
-    $pdf->Cell(0,6,'Aucune note.',0,1);
+    $pdf->Cell(0,6,pdfText('Aucune note.'),0,1);
 } else {
     $pdf->SetFont('Arial','',9);
     foreach ($notes as $note) {
         $date = date('d/m/Y', strtotime($note['created_at']));
         $pdf->SetFont('Arial','B',9);
-        $pdf->Cell(0,5,$date,0,1);
+        $pdf->Cell(0,5,pdfText($date),0,1);
         $pdf->SetFont('Arial','',9);
-        $pdf->MultiCell(0,5,$note['content']);
+        $pdf->Body($note['content']);
         $pdf->Ln(2);
     }
 }
