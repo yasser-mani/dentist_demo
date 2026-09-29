@@ -5,12 +5,10 @@
  */
 
 // Database
-// Defaults match a stock XAMPP / WAMP / MAMP install (root, no password).
-// Change these to match your own MySQL setup.
-define('DB_HOST', 'localhost');
+define('DB_HOST', '127.0.0.1');
 define('DB_NAME', 'dentaflow');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_USER', 'dentist_user');
+define('DB_PASS', 'Dentaflow@2026!Db');
 define('DB_CHARSET', 'utf8mb4');
 
 // Application
@@ -31,6 +29,6 @@ define('ALLOWED_MIMES', [
 // Timezone
 date_default_timezone_set('Europe/Paris');
 
-// Error reporting (set to 0 in production)
+// Error reporting (disabled display so PHP notices/warnings don't corrupt JSON responses)
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
