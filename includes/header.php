@@ -38,12 +38,7 @@ $pageTitle = $pageTitle ?? APP_NAME;
 
         <main class="main-content">
             <header class="top-bar">
-                <div class="top-bar-left">
-                    <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Ouvrir le menu">
-                        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                    </button>
-                    <h2 class="page-title" id="pageTitle"><?= e($pageTitle) ?></h2>
-                </div>
+               
                 <div class="top-bar-actions">
                     <span class="user-greeting">Bienvenue, Dr. Dupont</span>
                 </div>
